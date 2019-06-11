@@ -1,0 +1,99 @@
+= consul-go-dojo
+
+A repo for my experiments with Consul and Go.
+
+:icons: font
+:toc:
+
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+== Requirements
+
+* Go 1.12+
+* Consul running and listening on default ports, eg
+```shell
+$ docker run -d --name consul -p 8300:8300 -p 8500:8500 consul
+```
+
+== Agent Services TTL check
+
+This was the result of research on https://github.com/fabiolb/fabio/issues/663.
+
+Basically, this code registers two services in Consul with TTL checks but refreshes only one, periodically.
+After a while, Consul reaper removes the service, and associated check, which TTL has expired.
+
+
+```shell
+$ go run agent_svc_ttl.go
+INFO[2019-06-11T18:59:36+01:00] Deregistered all agent services from Consul.
+INFO[2019-06-11T18:59:36+01:00] Registered svc-a
+INFO[2019-06-11T18:59:36+01:00] Registered svc-b
+INFO[2019-06-11T18:59:36+01:00]
+INFO[2019-06-11T18:59:36+01:00] ******************************
+INFO[2019-06-11T18:59:36+01:00] Each 10 seconds, we'll be refreshing [svc-a-tll] but NOT [svc-b-tll].
+INFO[2019-06-11T18:59:36+01:00] After 20 seconds, [svc-b-tll] should be marked as critical.
+INFO[2019-06-11T18:59:36+01:00] After NO MORE THAN 90 seconds, [svc-b-tll] and [svc-b] SHOULD be deleted from Consul.
+INFO[2019-06-11T18:59:36+01:00] ******************************
+INFO[2019-06-11T18:59:36+01:00]
+INFO[2019-06-11T18:59:46+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T18:59:46+01:00] Listing checks for registered services...
+INFO[2019-06-11T18:59:46+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T18:59:46+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["passing"]
+INFO[2019-06-11T18:59:46+01:00]
+INFO[2019-06-11T18:59:56+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T18:59:56+01:00] Listing checks for registered services...
+INFO[2019-06-11T18:59:56+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T18:59:56+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T18:59:56+01:00]
+INFO[2019-06-11T19:00:06+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:00:06+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:00:06+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:00:06+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T19:00:06+01:00]
+INFO[2019-06-11T19:00:16+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:00:16+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:00:16+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:00:16+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T19:00:16+01:00]
+INFO[2019-06-11T19:00:26+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:00:26+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:00:26+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:00:26+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T19:00:26+01:00]
+INFO[2019-06-11T19:00:36+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:00:36+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:00:36+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:00:36+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T19:00:36+01:00]
+INFO[2019-06-11T19:00:46+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:00:46+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:00:46+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:00:46+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T19:00:46+01:00]
+INFO[2019-06-11T19:00:56+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:00:56+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:00:56+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:00:56+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T19:00:56+01:00]
+INFO[2019-06-11T19:01:06+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:01:06+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:01:06+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:01:06+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T19:01:06+01:00]
+INFO[2019-06-11T19:01:16+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:01:16+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:01:16+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:01:16+01:00] --> Service: ["svc-b-id"], Check: ["svc-b-ttl"], Status: ["critical"]
+INFO[2019-06-11T19:01:16+01:00]
+INFO[2019-06-11T19:01:26+01:00] Reset [svc-a-ttl] TTL clock.
+INFO[2019-06-11T19:01:26+01:00] Listing checks for registered services...
+INFO[2019-06-11T19:01:26+01:00] --> Service: ["svc-a-id"], Check: ["svc-a-ttl"], Status: ["passing"]
+INFO[2019-06-11T19:01:26+01:00]
+^CINFO[2019-06-11T19:01:30+01:00] Done.
+```
