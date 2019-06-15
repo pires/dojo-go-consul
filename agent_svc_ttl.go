@@ -42,7 +42,7 @@ func main() {
 			},
 		},
 	})
-	_ = client.Agent().PassTTL("svc-a-ttl", "yay")
+	_ = client.Agent().UpdateTTL("svc-a-ttl", "", consul.HealthPassing)
 	log.Infoln("Registered svc-a")
 
 	_ = client.Agent().ServiceRegister(&consul.AgentServiceRegistration{
@@ -56,7 +56,7 @@ func main() {
 			},
 		},
 	})
-	_ = client.Agent().PassTTL("svc-b-ttl", "yay")
+	_ = client.Agent().UpdateTTL("svc-b-ttl", "", consul.HealthPassing)
 	log.Infoln("Registered svc-b")
 
 	// Setup a ticket to wake up every n seconds.
@@ -76,7 +76,7 @@ func main() {
 	go func() {
 		for range ticker.C {
 			// Reset svc-a-ttl TTL clock.
-			_ = client.Agent().PassTTL("svc-a-ttl", "yay")
+			_ = client.Agent().UpdateTTL("svc-a-ttl", "", consul.HealthPassing)
 			log.Infoln("Reset [svc-a-ttl] TTL clock.")
 
 			// List registered services.
